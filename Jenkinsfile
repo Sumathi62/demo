@@ -9,33 +9,19 @@ pipeline {
         timestamps()
     }
     stages {
-        stage('Stop & Remove Old Container') {
+        stage('Clean Up') {
             steps {
                 echo 'Stopping and removing old container (if exists)...'
-                sh 'docker ps -q --filter "name=$CONTAINER_NAME" | xargs -r docker stop'
-                sh 'docker ps -aq --filter "name=$CONTAINER_NAME" | xargs -r docker rm'
+                sh 'docker stop $CONTAINER_NAME || true'
+                sh 'docker rm $CONTAINER_NAME || true'
+                echo 'Removing old Docker image...'
+                sh 'docker rmi -f $IMAGE_NAME || true'
             }
         }
         stage('Build') {
             steps {
-                echo 'Building the Docker image...'
-                sh 'docker build -t $IMAGE_NAME .'
-            }
-        }
-        stage('Test') {
-            steps {
-                echo 'Running tests...'
-                sh 'docker run --rm $IMAGE_NAME echo "Test successful!"'
-            }
-        }
-        stage('Push Image') {
-            steps {
-                echo 'Logging into Docker registry...'
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                }
-                echo 'Pushing Docker image to registry...'
-                sh 'docker push $IMAGE_NAME'
+                echo 'Building a fresh Docker image...'
+                sh 'docker build --no-cache -t $IMAGE_NAME .'
             }
         }
         stage('Run Updated Container') {

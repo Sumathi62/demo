@@ -2,12 +2,20 @@ pipeline {
     agent any
     environment {
         IMAGE_NAME = "sumathi18/html"
-        CONTAINER_REGISTRY = "docker.io" // Change if using a private registry
+        CONTAINER_NAME = "html_container"
+        CONTAINER_REGISTRY = "docker.io"
     }
     options {
-        timestamps() // Adds timestamps to logs
+        timestamps()
     }
     stages {
+        stage('Stop & Remove Old Container') {
+            steps {
+                echo 'Stopping and removing old container (if exists)...'
+                sh 'docker ps -q --filter "name=$CONTAINER_NAME" | xargs -r docker stop'
+                sh 'docker ps -aq --filter "name=$CONTAINER_NAME" | xargs -r docker rm'
+            }
+        }
         stage('Build') {
             steps {
                 echo 'Building the Docker image...'
@@ -30,10 +38,10 @@ pipeline {
                 sh 'docker push $IMAGE_NAME'
             }
         }
-        stage('Run Container') {
+        stage('Run Updated Container') {
             steps {
-                echo 'Running Docker container...'
-                sh 'docker run -d -p 3535:80 $IMAGE_NAME'
+                echo 'Running new Docker container on port 3535...'
+                sh 'docker run -d --name $CONTAINER_NAME -p 3535:80 $IMAGE_NAME'
                 echo "Application is accessible at: http://localhost:3535"
             }
         }

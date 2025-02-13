@@ -30,12 +30,11 @@ pipeline {
                 sh 'docker push $IMAGE_NAME'
             }
         }
-        stage('Verify Docker Image Pull') {
+        stage('Run Container') {
             steps {
-                echo 'Pulling and Running the Docker Image to Verify...'
-                sh 'docker rmi -f $IMAGE_NAME || true' // Remove local image to test pulling
-                sh 'docker pull $IMAGE_NAME'
-                sh 'docker run --rm $IMAGE_NAME echo "Image Pulled and Running Successfully!"'
+                echo 'Running Docker container...'
+                sh 'docker run -d -p 3535:80 $IMAGE_NAME'
+                echo "Application is accessible at: http://localhost:3535"
             }
         }
     }

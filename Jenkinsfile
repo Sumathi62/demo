@@ -30,14 +30,12 @@ pipeline {
                 sh 'docker push $IMAGE_NAME'
             }
         }
-        stage('Deploy to Kubernetes') {
+        stage('Verify Docker Image Pull') {
             steps {
-                sh 'kubectl apply -f html-deploy.yaml'
-                sh '''
-                NODE_IP=$(hostname -I | awk '{print $1}')
-                NODE_PORT=$(kubectl get svc html-service -o=jsonpath='{.spec.ports[0].nodePort}')
-                echo "Application is available at: http://$NODE_IP:$NODE_PORT"
-                '''
+                echo 'Pulling and Running the Docker Image to Verify...'
+                sh 'docker rmi -f $IMAGE_NAME || true' // Remove local image to test pulling
+                sh 'docker pull $IMAGE_NAME'
+                sh 'docker run --rm $IMAGE_NAME echo "Image Pulled and Running Successfully!"'
             }
         }
     }
